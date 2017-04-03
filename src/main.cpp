@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
+#include <iomanip>  // std::setprecision
 #include "Eigen/Dense"
 #include "FusionEKF.h"
 #include "ground_truth_package.h"
@@ -65,6 +66,8 @@ int main(int argc, char* argv[]) {
   vector<GroundTruthPackage> gt_pack_list;
 
   string line;
+  
+    //cout << " Now start" << endl; // debug
 
   // prep the measurement packages (each line represents a measurement at a
   // timestamp)
@@ -80,6 +83,7 @@ int main(int argc, char* argv[]) {
     iss >> sensor_type;
     if (sensor_type.compare("L") == 0) {
       // LASER MEASUREMENT
+	   // cout << " LASER MEASUREMENT" << endl; // debug
 
       // read measurements at this timestamp
       meas_package.sensor_type_ = MeasurementPackage::LASER;
@@ -94,6 +98,7 @@ int main(int argc, char* argv[]) {
       measurement_pack_list.push_back(meas_package);
     } else if (sensor_type.compare("R") == 0) {
       // RADAR MEASUREMENT
+	  // cout << " RADAR MEASUREMENT" << endl; // debug
 
       // read measurements at this timestamp
       meas_package.sensor_type_ = MeasurementPackage::RADAR;
@@ -124,6 +129,7 @@ int main(int argc, char* argv[]) {
     gt_pack_list.push_back(gt_package);
   }
 
+  
   // Create a Fusion EKF instance
   FusionEKF fusionEKF;
 
@@ -136,6 +142,7 @@ int main(int argc, char* argv[]) {
   for (size_t k = 0; k < N; ++k) {
     // start filtering from the second frame (the speed is unknown in the first
     // frame)
+	
     fusionEKF.ProcessMeasurement(measurement_pack_list[k]);
 
     // output the estimation
@@ -145,27 +152,28 @@ int main(int argc, char* argv[]) {
     out_file_ << fusionEKF.ekf_.x_(3) << "\t";
 
     // output the measurements
-    if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) {
+    if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) { // LASER
       // output the estimation
-      out_file_ << measurement_pack_list[k].raw_measurements_(0) << "\t";
-      out_file_ << measurement_pack_list[k].raw_measurements_(1) << "\t";
-    } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
+      out_file_  << measurement_pack_list[k].raw_measurements_(0) << "\t";
+      out_file_  << measurement_pack_list[k].raw_measurements_(1) << "\t";
+    } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {  // RADAR
       // output the estimation in the cartesian coordinates
       float ro = measurement_pack_list[k].raw_measurements_(0);
       float phi = measurement_pack_list[k].raw_measurements_(1);
-      out_file_ << ro * cos(phi) << "\t"; // p1_meas
-      out_file_ << ro * sin(phi) << "\t"; // ps_meas
+      out_file_  << ro * cos(phi) << "\t"; // p1_meas
+      out_file_  << ro * sin(phi) << "\t"; // ps_meas
     }
 
     // output the ground truth packages
-    out_file_ << gt_pack_list[k].gt_values_(0) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(1) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(2) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(3) << "\n";
+    out_file_  << gt_pack_list[k].gt_values_(0) << "\t";
+    out_file_  << gt_pack_list[k].gt_values_(1) << "\t";
+    out_file_  << gt_pack_list[k].gt_values_(2) << "\t";
+    out_file_  << gt_pack_list[k].gt_values_(3) << "\n";
 
     estimations.push_back(fusionEKF.ekf_.x_);
     ground_truth.push_back(gt_pack_list[k].gt_values_);
   }
+
 
   // compute the accuracy (RMSE)
   Tools tools;

@@ -1,0 +1,13 @@
+sample-laser-radar-measurement-data-1
+Accuracy - RMSE:
+0.0651648
+0.0605379
+0.533212
+0.544193
+
+sample-laser-radar-measurement-data-2
+Accuracy - RMSE:
+0.185496
+0.190302
+0.476755
+0.804468

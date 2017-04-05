@@ -25,11 +25,11 @@ void KalmanFilter::Predict() {
     * predict the state
   */
   x_ = F_ * x_;
- 
+
   MatrixXd Ft = F_.transpose();
 
   P_ = F_ * P_ * Ft + Q_;
-  
+
 
 }
 
@@ -39,59 +39,61 @@ void KalmanFilter::Update(const VectorXd &z) {
     * update the state by using Kalman Filter equations
   */
   VectorXd z_pred = H_ * x_;
+
   VectorXd y = z - z_pred;
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
-  MatrixXd Si = S.inverse();
   MatrixXd PHt = P_ * Ht;
-  MatrixXd K = PHt * Si;
+  MatrixXd S = H_ * PHt + R_; // H_ * P_ * Ht + R_;
+  MatrixXd Si = S.inverse();
 
+  MatrixXd K = PHt * Si;
   //new estimate
   x_ = x_ + (K * y);
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
   P_ = (I - K * H_) * P_;
-  
+
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
   /**
     * update the state by using Extended Kalman Filter equations
   */
-  
+
   // get values from matrix
   float px = x_[0];
   float py = x_[1];
   float vx = x_[2];
-  float vy = x_[3]; 
-  
+  float vy = x_[3];
+
   /**
-  * Before and while calculating the Jacobian matrix Hj, 
-  * make sure your code avoids dividing by zero. For example, both the x and y values might be zero 
+  * Before and while calculating the Jacobian matrix Hj,
+  * make sure your code avoids dividing by zero. For example, both the x and y values might be zero
   * or px*px + py*py might be close to zero.
   */
 
    // avoid px value divide by zero // and Jacobian calculation
-   if (fabs(px) <0.001 && fabs(py) <0.001) { // px == 0 -->Nan Error occured 
+   if (fabs(px) <0.001 && fabs(py) <0.001) { // px == 0 -->Nan Error occured
 		   px = (px<0)? -0.001 : 0.001; // remain sign of number
 		   py = (py<0)? -0.001 : 0.001;
    }
    float ro_2 = px * px + py * py;
    if( ro_2 < 0.000001)
 	   ro_2 = 0.000001;
-   
-   float ro = sqrt (ro_2);
 
-   
+   float ro = sqrt (ro_2); // min(row_2) = 0.000001 --> min(row) == 0.001 (cannot be zero)
+
+
    /**
-   * In C++, atan2() returns values between -pi and pi. When calculating phi in y = z - h(x) for 
-   radar measurements, the resulting angle phi in the y vector should be adjusted so that 
+   * In C++, atan2() returns values between -pi and pi. When calculating phi in y = z - h(x) for
+   radar measurements, the resulting angle phi in the y vector should be adjusted so that
    it is between -pi and pi. The Kalman filter is expecting small angle values between the range -pi and pi.
    */
 
-  float phi = atan2(py, px); //  = atan(py/px);
-  float ro_dot = (px*vx + py*vy) / ro;
-  
+  float phi = atan2(py, px); //  = atan(py/px); // px==py==0 cannot be founded
+                             // (if that case, it changed px=(+ or -) 0.001,  py = (+ or -) 0.001
+  float ro_dot = (px*vx + py*vy) / ro; // ro cannot be zero
+
   VectorXd z_pred(3);
   z_pred << ro, phi, ro_dot;
 
@@ -100,9 +102,10 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   // same with Kalman Filter
   VectorXd y = z - z_pred;
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
-  MatrixXd Si = S.inverse();
   MatrixXd PHt = P_ * Ht;
+  MatrixXd S = H_ * PHt + R_; // H_ * P_ * Ht + R_;
+  MatrixXd Si = S.inverse();
+
   MatrixXd K = PHt * Si;
 
   //new estimate
@@ -110,5 +113,5 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
   P_ = (I - K * H_) * P_;
- 
+
 }

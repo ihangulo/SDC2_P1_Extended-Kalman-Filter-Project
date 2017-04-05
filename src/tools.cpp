@@ -17,8 +17,8 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 	https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/3612b91d-9c33-47ad-8067-a572a6c93837/concepts/c46a47f0-7cdc-4e49-b225-5134b438255a
   copied ***
   */
-  
-  
+
+
   VectorXd rmse(4);
   rmse << 0,0,0,0;
 
@@ -47,7 +47,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   rmse = rmse.array().sqrt();
 
   //return the result
-  return rmse;	
+  return rmse;
 }
 
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
@@ -56,7 +56,7 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 	https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/3612b91d-9c33-47ad-8067-a572a6c93837/concepts/08fc65c1-04d9-45d3-8a98-abf7bb072dc2
 	** copied
   */
- 
+
   MatrixXd Hj(3,4);
   //recover state parameters
   float px = x_state(0);
@@ -72,16 +72,21 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
     cout << "CalculateJacobian () - Error - Division by Zero" << endl;
     return Hj;
   }
-  
+
   float c2 = sqrt(c1);
 
   float c3 = (c1*c2);
 
+
+  float vxpy_vypx = vx*py - vy*px;
+
+
   //compute the Jacobian matrix
   Hj << (px/c2), (py/c2), 0, 0,
       -(py/c1), (px/c1), 0, 0,
-      py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
+      //py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
+      py*vxpy_vypx/c3, (-1)*px*vxpy_vypx/c3, px/c2, py/c2;
 
-  return Hj; 
-  
+  return Hj;
+
 }

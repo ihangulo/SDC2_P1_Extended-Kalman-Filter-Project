@@ -11,7 +11,7 @@ using std::vector;
 
 /*
  * Constructor.
- 
+
  https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/3612b91d-9c33-47ad-8067-a572a6c93837/concepts/252f0093-48ac-4122-aaae-f10214d30320
  above source // tracking.cpp is helpful.
  */
@@ -21,7 +21,7 @@ FusionEKF::FusionEKF() {
   previous_timestamp_ = 0;
 
   // initializing matrices
- 
+
   //measurement covariance matrix - laser // given value
   R_laser_ = MatrixXd(2, 2);
   R_laser_ << 0.0225, 0,
@@ -46,15 +46,15 @@ FusionEKF::FusionEKF() {
   H_laser_ = MatrixXd(2, 4);
   H_laser_ << 1,0,0,0,
         0,1,0,0;
-  
-		
+
+
   //state covariance matrix P
   MatrixXd P_ = MatrixXd(4, 4);
   P_ << 1, 0, 0, 0,
           0, 1, 0, 0,
           0, 0, 1000, 0,
           0, 0, 0, 1000;
-		  
+
   //the initial transition matrix F_
   MatrixXd F_ = MatrixXd(4, 4);
   F_ << 1, 0, 1, 0,
@@ -62,19 +62,19 @@ FusionEKF::FusionEKF() {
     0, 0, 1, 0,
     0, 0, 0, 1; // it will be modified at prediction
 
-		
+
   MatrixXd Q_ = MatrixXd(4, 4);
   // Given value : Use noise_ax = 9 and noise_ay = 9 for your Q matrix. // given value
 
   noise_ax = 9;
   noise_ay = 9;
-  
+
 
   //void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
    //                     MatrixXd &H_in, MatrixXd &R_in, MatrixXd &Q_in) {
 
   ekf_.Init(x_, P_, F_, H_laser_, R_laser_, Q_); // x_, H_ , R_ are will be changed by type
-  
+
 }
 
 /**
@@ -106,12 +106,12 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 	  float ro = measurement_pack.raw_measurements_[0];
 	  float phi = measurement_pack.raw_measurements_[1];
 	  float ro_dot = measurement_pack.raw_measurements_[2];
-	 
-	  
+
+
       //set the state with the initial location and real velocity
 	  ekf_.x_ << ro * cos(phi), ro * sin(phi), ro_dot* cos(phi), ro_dot*sin(phi); // real velocity
 	  // ekf_.x_ << ro * cos(phi), ro * sin(phi), 0.0, 0.0; // start 0 velocity
-	 
+
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       /**
@@ -119,31 +119,25 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       */
 	  float px = measurement_pack.raw_measurements_[0];
 	  float py = measurement_pack.raw_measurements_[1];
-	  
+
 	  /**
 	   In Data 2, the starting lidar measurements for x, y are both zero, and this special case can create problems
 	   for both the EKF and UKF lidar update states, in particular
-	   for the EKF when calculating the Jacobian. One way to catch for this is to observe 
+	   for the EKF when calculating the Jacobian. One way to catch for this is to observe
 	   when both px, py are zero and instead set them to some small floating value.
 	   */
-	   if (fabs(px) <0.0001 && fabs(py) <0.0001) { // px == 0 -->Nan Error occured 
-		   px = (px<0)? -0.0001 : 0.0001; // remain sign of number
-		   py = (py<0)? -0.0001 : 0.0001;
+	   if (fabs(px) <0.01 && fabs(py) <0.01) { // px == 0 -->Nan Error occured
+		   px = 0.01; // according to reviewer's adivce (after 1st review), First time the value is so small (0.0001)
+		   py = 0.01;
 	   }
-	   
+
 	   //set the state with the initial location and zero velocity
        ekf_.x_ << px, py, 0.0, 0.0;
 
     }
 	previous_timestamp_ = measurement_pack.timestamp_;
-	
-	// cout << "init previous_timestamep" << previous_timestamp_ << endl;
-	
-	// prohibit divide by zero error
-	if (noise_ax ==0)
-	  noise_ax = 0.0001;
-    if(noise_ay == 0)
-	  noise_ay= 0.0001;
+
+
 
     // done initializing, no need to predict or update
     is_initialized_ = true;
@@ -162,11 +156,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      * Update the process noise covariance matrix.
      * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
-   
-   
+
+
   //compute the time elapsed between the current and previous measurements
   float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0f;	//dt - expressed in seconds
-  
+
 //   cout << "now dt=" << measurement_pack.timestamp_ << endl << previous_timestamp_ << endl << dt<< endl; // debug
   previous_timestamp_ = measurement_pack.timestamp_;
 
@@ -177,12 +171,12 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   //Modify the F matrix so that the time is integrated
   ekf_.F_(0, 2) = dt;
   ekf_.F_(1, 3) = dt;
-  
-  /** finally 
+
+  /** finally
   ekf_.F_<< 1, 0, dt, 0,
             0, 1, 0, dt,
 			0, 0, 1, 0,
-			0, 0, 0, 1; 
+			0, 0, 0, 1;
   */
   //set the process covariance matrix Q
 
@@ -191,8 +185,12 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 			   dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
 			   0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
 
-  ekf_.Predict();
-  
+  if(dt>0.0001) {	// after 1st review -->  if dt is very small
+                //(i.e. two measurements are approximately coincident in time) we should not
+                // make a prediction as it can led to arithmetic problems.
+    ekf_.Predict();
+  }
+
 
   /*****************************************************************************
    *  Update
@@ -208,9 +206,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 	ekf_.R_ = R_radar_;
 	ekf_.H_ = tools.CalculateJacobian(ekf_.x_); // Hj
 	ekf_.UpdateEKF(measurement_pack.raw_measurements_);
-	
+
   } else {
-	  
+
     // Laser updates
     ekf_.R_ = R_laser_; // set type
 	ekf_.H_ = H_laser_;
@@ -219,6 +217,6 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   }
 
   // print the output
-  cout << "x_ = " << ekf_.x_ << endl;
-  cout << "P_ = " << ekf_.P_ << endl;
+  //cout << "x_ = " << ekf_.x_ << endl;
+  //cout << "P_ = " << ekf_.P_ << endl;
 }
